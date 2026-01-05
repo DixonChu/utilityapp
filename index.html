@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UtilityKit.cloud - Professional Dev & Business Tools</title>
+    <meta name="description" content="UtilityKit.cloud: Free professional tools including JSON Diff, JSON Formatter, Base64 to PDF, Loan Calculator, and more. Runs locally in your browser.">
+    
+    <meta property="og:title" content="UtilityKit - Professional Cloud Utilities">
+    <meta property="og:description" content="The all-in-one toolkit for developers and business owners. No install required.">
+    <meta property="og:url" content="https://utilitykit.cloud">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            /* Brand Color: Cloud Blue/Indigo */
+            --primary: #2563eb; 
+            --primary-soft: #eff6ff;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+            
+            /* Diff Colors */
+            --diff-add-bg: #dcfce7; --diff-add-text: #166534;
+            --diff-rem-bg: #fee2e2; --diff-rem-text: #991b1b;
+            --diff-chg-bg: #fef9c3; --diff-chg-text: #854d0e;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 260px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+            overflow-y: auto;
+        }
+
+        .brand { font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 30px; letter-spacing: -0.5px; cursor: pointer; text-decoration: none; display: block; }
+        .brand span { background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px; font-size: 14px; margin-left: 6px; position: relative; top: -2px;}
+
+        .nav-category { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; margin-top: 24px; letter-spacing: 0.5px; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            border-radius: 8px; color: var(--text-main); font-weight: 500; font-size: 14px;
+            cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .nav-item:hover { background: var(--bg-body); }
+        .nav-item.active { background: var(--primary-soft); color: var(--primary); }
+        .nav-icon { width: 20px; text-align: center; font-size: 18px; }
+
+        /* --- MAIN CONTENT --- */
+        #main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 32px;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        header h1 { margin: 0; font-size: 26px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
+        
+        /* FOOTER & PRIVACY */
+        footer { margin-top: auto; padding-top: 40px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: var(--text-muted); }
+        .footer-link { color: var(--text-muted); text-decoration: none; margin: 0 10px; cursor: pointer; }
+        .footer-link:hover { color: var(--primary); }
+
+        /* --- GRID --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            flex: 1; 
+        }
+
+        .tool-card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow-sm); border: 1px solid #f1f5f9; cursor: pointer;
+            transition: all 0.2s; display: flex; flex-direction: column;
+        }
+        .tool-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary-soft); }
+        
+        .tool-icon { width: 44px; height: 44px; background: var(--bg-body); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px; }
+        .tool-title { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+        .tool-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+        /* --- TOOL VIEW --- */
+        #tool-container {
+            display: none; background: white; border-radius: var(--radius); padding: 40px;
+            max-width: 900px; margin: 0 auto; box-shadow: var(--shadow-md); flex: 1; width: 100%;
+        }
+        .tool-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+        .back-link { color: var(--text-muted); cursor: pointer; font-size: 14px; background: #f1f5f9; padding: 8px 16px; border-radius: 20px; font-weight: 500; transition: 0.2s; }
+        .back-link:hover { background: #e2e8f0; color: var(--text-main); }
+
+        /* --- UI ELEMENTS --- */
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        
+        input, select, textarea { 
+            width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 8px; 
+            font-size: 14px; outline: none; font-family: inherit; transition: border 0.2s; background: #fff;
+        }
+        textarea { font-family: 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.5; }
+        input:focus, textarea:focus { border-color: var(--primary); }
+        
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-secondary { background: #f1f5f9; color: #1f2937; margin-top: 10px; border: 1px solid #e2e8f0; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .result-area { margin-top: 30px; padding: 24px; background: #f8fafc; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1; display: none; }
+        .res-val { font-size: 32px; font-weight: 800; color: var(--primary); }
+        .res-sub { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+        
+        /* --- DIFF TOOL --- */
+        .diff-output { text-align: left; font-family: monospace; font-size: 12px; background: #fff; border: 1px solid #e2e8f0; padding: 0; border-radius: 8px; max-height: 400px; overflow-y: auto; }
+        .diff-line { padding: 4px 10px; border-bottom: 1px solid #f1f5f9; display: flex; }
+        .diff-add { background-color: var(--diff-add-bg); color: var(--diff-add-text); }
+        .diff-rem { background-color: var(--diff-rem-bg); color: var(--diff-rem-text); }
+        .diff-chg { background-color: var(--diff-chg-bg); color: var(--diff-chg-text); }
+        .diff-key { font-weight: bold; width: 140px; flex-shrink: 0; user-select: none; opacity: 0.8; }
+        .diff-val { flex: 1; word-break: break-all; }
+
+        /* --- ADSENSE BANNER --- */
+        .ad-banner-bottom {
+            width: 100%; min-height: 100px; background: #f8fafc;
+            border: 2px dashed #cbd5e1; border-radius: 12px;
+            margin-top: 60px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #94a3b8; font-size: 12px; text-align: center; padding: 10px;
+        }
+
+        /* --- MODAL (PRIVACY POLICY) --- */
+        #modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;
+        }
+        #modal-box {
+            background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 16px;
+            max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        #modal-box h2 { margin-top: 0; }
+        #modal-box p { font-size: 14px; line-height: 1.6; color: #475569; }
+
+        /* --- MOBILE --- */
+        @media (max-width: 768px) {
+            #sidebar { 
+                bottom: 0; top: auto; width: 100%; height: auto; flex-direction: row; 
+                border-right: none; border-top: 1px solid #e2e8f0; padding: 10px; 
+                justify-content: space-around; position: fixed; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+            }
+            .brand, .nav-category, .nav-text { display: none; }
+            .nav-item { flex-direction: column; gap: 4px; padding: 8px; font-size: 10px; }
+            .nav-icon { font-size: 20px; }
+            #main { margin-left: 0; padding: 20px; padding-bottom: 110px; }
+            .dashboard-grid { grid-template-columns: 1fr; gap: 16px; }
+            .tool-card { flex-direction: row; align-items: center; gap: 16px; padding: 16px; }
+            .tool-icon { margin-bottom: 0; width: 40px; height: 40px; font-size: 20px; }
+            .tool-desc { display: none; }
+            #tool-container { padding: 20px; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <a href="#" class="brand" onclick="showAllTools()">⚡ Utility<span>Kit</span></a>
+        
+        <div class="nav-category">Menu</div>
+        <a href="#" class="nav-item active" onclick="showAllTools()">
+            <span class="nav-icon">🏠</span> <span class="nav-text">All Tools</span>
+        </a>
+        <a href="#" class="nav-item" onclick="filterCategory('dev')">
+            <span class="nav-icon">💻</span> <span class="nav-text">Dev Tools</span>
+        </a>
+        <a href="#" class="nav-item" onclick="filterCategory('finance')">
+            <span class="nav-icon">💰</span> <span class="nav-text">Finance</span>
+        </a>
+        <a href="#" class="nav-item" onclick="filterCategory('productivity')">
+            <span class="nav-icon">🚀</span> <span class="nav-text">Productivity</span>
+        </a>
+    </nav>
+
+    <main id="main">
+        <header>
+            <h1 id="page-title">All Tools</h1>
+        </header>
+
+        <div id="dashboard-view" class="dashboard-grid">
+            <div class="tool-card" data-cat="dev" onclick="loadTool('jsondiff')"><div class="tool-icon">⚖️</div><div><div class="tool-title">JSON Diff</div><div class="tool-desc">Compare two JSON objects.</div></div></div>
+            <div class="tool-card" data-cat="dev" onclick="loadTool('jsonfmt')"><div class="tool-icon">﹛﹜</div><div><div class="tool-title">JSON Formatter</div><div class="tool-desc">Auto-fix & Beautify JSON.</div></div></div>
+            <div class="tool-card" data-cat="dev" onclick="loadTool('unix')"><div class="tool-icon">🕒</div><div><div class="tool-title">Unix Timestamp</div><div class="tool-desc">Epoch time converter.</div></div></div>
+            <div class="tool-card" data-cat="dev" onclick="loadTool('urlenc')"><div class="tool-icon">🔗</div><div><div class="tool-title">URL Encoder</div><div class="tool-desc">Encode/Decode URLs.</div></div></div>
+            <div class="tool-card" data-cat="dev" onclick="loadTool('base64pdf')"><div class="tool-icon">🧬</div><div><div class="tool-title">Base64 to PDF</div><div class="tool-desc">Decode Base64 strings.</div></div></div>
+            <div class="tool-card" data-cat="finance" onclick="loadTool('margin')"><div class="tool-icon">📈</div><div><div class="tool-title">Profit Margin</div><div class="tool-desc">Calculate gross margin.</div></div></div>
+            <div class="tool-card" data-cat="finance" onclick="loadTool('discount')"><div class="tool-icon">🏷️</div><div><div class="tool-title">Discount Calc</div><div class="tool-desc">Sale price calculator.</div></div></div>
+            <div class="tool-card" data-cat="finance" onclick="loadTool('loan')"><div class="tool-icon">🏦</div><div><div class="tool-title">Loan Calculator</div><div class="tool-desc">Estimate monthly payments.</div></div></div>
+            <div class="tool-card" data-cat="productivity" onclick="loadTool('pomodoro')"><div class="tool-icon">⏱️</div><div><div class="tool-title">Focus Timer</div><div class="tool-desc">Pomodoro timer.</div></div></div>
+            <div class="tool-card" data-cat="productivity" onclick="loadTool('qr')"><div class="tool-icon">⬛</div><div><div class="tool-title">QR Generator</div><div class="tool-desc">Create custom QR codes.</div></div></div>
+            <div class="tool-card" data-cat="productivity" onclick="loadTool('pdf')"><div class="tool-icon">📄</div><div><div class="tool-title">Image to PDF</div><div class="tool-desc">JPG/PNG to PDF.</div></div></div>
+            <div class="tool-card" data-cat="productivity" onclick="loadTool('password')"><div class="tool-icon">🔐</div><div><div class="tool-title">Secure Pass</div><div class="tool-desc">Random password gen.</div></div></div>
+        </div>
+
+        <div id="tool-container">
+            <div class="tool-header"><h2 id="tool-heading" style="margin:0;">Tool Name</h2><div class="back-link" onclick="showAllTools()">← Back</div></div>
+            <div id="tool-content"></div>
+        </div>
+
+        <div class="ad-banner-bottom">
+            <div><strong>Ad Space</strong></div>
+            <div style="font-size:11px; margin-top:5px;">This area is optimized for Google AdSense Display Ads.</div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 UtilityKit.cloud. All rights reserved.</p>
+            <p>
+                <span class="footer-link" onclick="openModal()">Privacy Policy</span> | 
+                <a href="#" class="footer-link">Contact</a>
+            </p>
+        </footer>
+
+    </main>
+
+    <div id="modal-overlay">
+        <div id="modal-box">
+            <h2>Privacy Policy</h2>
+            <p><strong>Last updated: January 2026</strong></p>
+            <p>UtilityKit.cloud ("we", "our") operates as a client-side utility website. We respect your privacy.</p>
+            <p><strong>1. Data Collection:</strong> We do not store any of your inputs (JSON, Images, Passwords) on our servers. All calculations happen locally in your browser.</p>
+            <p><strong>2. Advertising:</strong> We use third-party vendors, including Google, which use cookies to serve ads based on a user's prior visits to this website or other websites.</p>
+            <p><strong>3. Cookies:</strong> Google's use of advertising cookies enables it and its partners to serve ads to your users based on their visit to your sites and/or other sites on the Internet.</p>
+            <button class="btn" onclick="closeModal()" style="margin-top:20px;">Close</button>
+        </div>
+    </div>
+
+<script>
+    // --- HELPER: CLEAN JSON ---
+    function cleanJSON(str) {
+        if(!str) return "";
+        str = str.replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+        str = str.replace(/:\s*undefined/g, ': null');
+        str = str.replace(/:\s*NaN/g, ': null');
+        str = str.replace(/'/g, '"');
+        str = str.replace(/,(\s*[}\]])/g, '$1');
+        return str;
+    }
+
+    // --- STATE MANAGEMENT ---
+    const tools = {
+        jsondiff: {
+            title: "JSON Diff / Compare",
+            html: `<div class="grid-2"><div class="input-group"><label>Original JSON (A)</label><textarea id="json-a" rows="8" placeholder='{"id": 1}'></textarea></div><div class="input-group"><label>New JSON (B)</label><textarea id="json-b" rows="8" placeholder='{"id": 2}'></textarea></div></div><button class="btn" onclick="compareJSON()">Compare</button><button class="btn btn-secondary" onclick="loadSampleDiff()">Load Sample</button><div id="diff-res" class="result-area" style="text-align:left; padding:0; border:none; background:transparent;"></div>`
+        },
+        jsonfmt: {
+            title: "JSON Formatter & Validator",
+            html: `<div class="input-group"><textarea id="json-input" rows="8" placeholder="Paste messy JSON here..."></textarea></div><div class="grid-2"><button class="btn" onclick="fmtJSON()">Beautify</button><button class="btn btn-secondary" style="margin-top:0;" onclick="minJSON()">Minify</button></div><div id="json-res" class="result-area" style="display:none;"><div class="code-block" id="json-out"></div></div>`
+        },
+        unix: {
+            title: "Unix Timestamp Converter",
+            html: `<div class="grid-2"><div class="input-group"><label>Epoch Timestamp</label><input type="number" id="ts-in" placeholder="1704067200"></div><button class="btn" style="margin-top:26px;" onclick="convertTs()">Convert</button></div><div id="ts-res" class="result-area"><div class="res-val" id="ts-val" style="font-size:20px;">-</div></div><div style="margin-top:20px; text-align:center; font-size:12px; color:#666;">Current Epoch: <span id="ts-now"></span></div>`
+        },
+        urlenc: {
+            title: "URL Encoder / Decoder",
+            html: `<div class="input-group"><textarea id="url-input" rows="4" placeholder="Enter URL..."></textarea></div><div class="grid-2"><button class="btn" onclick="doUrl('enc')">Encode</button><button class="btn btn-secondary" style="margin-top:0" onclick="doUrl('dec')">Decode</button></div><div class="input-group" style="margin-top:20px;"><textarea id="url-output" rows="4" readonly placeholder="Result..."></textarea></div>`
+        },
+        base64pdf: {
+            title: "Base64 to PDF Converter",
+            html: `<div class="input-group"><label>Base64 String</label><textarea id="b64-input" rows="8" placeholder="Paste Base64 string..."></textarea></div><div class="input-group"><label>Filename</label><input type="text" id="b64-name" value="document.pdf"></div><button class="btn" onclick="convertBase64ToPDF()">Convert & Download</button>`
+        },
+        margin: { title: "Profit Margin", html: `<div class="input-group"><label>Cost ($)</label><input type="number" id="m-cost"></div><div class="input-group"><label>Sale ($)</label><input type="number" id="m-sale"></div><button class="btn" onclick="calcMargin()">Calculate</button><div id="res-margin" class="result-area"><div class="res-val" id="val-margin">0%</div></div>` },
+        discount: { title: "Discount Calc", html: `<div class="input-group"><label>Price ($)</label><input type="number" id="d-price"></div><div class="input-group"><label>Off (%)</label><input type="number" id="d-off"></div><button class="btn" onclick="calcDisc()">Calculate</button><div id="res-disc" class="result-area"><div class="res-val" id="val-disc">$0.00</div></div>` },
+        loan: { title: "Loan Calculator", html: `<div class="input-group"><label>Amount</label><input type="number" id="l-amt"></div><div class="input-group"><label>Rate (%)</label><input type="number" id="l-rate"></div><div class="input-group"><label>Years</label><input type="number" id="l-term"></div><button class="btn" onclick="calcLoan()">Calculate</button><div id="res-loan" class="result-area"><div class="res-val" id="val-loan">$0.00</div></div>` },
+        pomodoro: { title: "Focus Timer", html: `<div style="text-align:center; padding: 40px 0;"><div id="timer-display" style="font-size: 60px; font-weight:800; color:var(--primary); margin-bottom:20px;">25:00</div><button class="btn" onclick="startTimer()" style="max-width:200px;">Start</button><button class="btn" onclick="resetTimer()" style="background:#e5e7eb; color:#333; max-width:200px; margin-top:10px;">Reset</button></div>` },
+        qr: { title: "QR Generator", html: `<div class="input-group"><label>Text/URL</label><input type="text" id="q-text"></div><button class="btn" onclick="genQR()">Generate</button><div id="qr-area" style="margin-top:30px; display:flex; justify-content:center;"></div>` },
+        pdf: { title: "Image to PDF", html: `<div class="input-group"><label>Select Image</label><input type="file" id="p-file" accept="image/*"></div><button class="btn" onclick="genPDF()">Download PDF</button>` },
+        password: { title: "Secure Password", html: `<div id="res-pass" class="result-area" style="display:block; margin-top:0; margin-bottom:20px;"><div class="res-val" id="val-pass" style="word-break:break-all; font-size:24px;">...</div></div><button class="btn" onclick="genPass()">Generate</button>` }
+    };
+
+    // --- NAV ---
+    function resetView() {
+        document.getElementById('dashboard-view').style.display = 'grid';
+        document.getElementById('tool-container').style.display = 'none';
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    }
+    function showAllTools() {
+        resetView();
+        document.querySelectorAll('.tool-card').forEach(card => card.style.display = 'flex');
+        document.getElementById('page-title').innerText = 'All Tools';
+        document.querySelector('.nav-item[onclick="showAllTools()"]').classList.add('active');
+    }
+    function filterCategory(cat) {
+        resetView();
+        document.querySelectorAll('.tool-card').forEach(card => card.style.display = card.dataset.cat === cat ? 'flex' : 'none');
+        document.getElementById('page-title').innerText = cat === 'dev' ? 'Dev Tools' : cat.charAt(0).toUpperCase() + cat.slice(1);
+        document.querySelector(`.nav-item[onclick="filterCategory('${cat}')"]`).classList.add('active');
+    }
+    function loadTool(toolId) {
+        const tool = tools[toolId]; if(!tool) return;
+        document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('tool-container').style.display = 'block';
+        document.getElementById('tool-heading').innerText = tool.title;
+        document.getElementById('page-title').innerText = 'Tool';
+        document.getElementById('tool-content').innerHTML = tool.html;
+        if(toolId === 'unix') setInterval(() => document.getElementById('ts-now').innerText = Math.floor(Date.now()/1000), 1000);
+    }
+
+    // --- LOGIC ---
+    function compareJSON() {
+        const out = document.getElementById('diff-res'); out.innerHTML = ''; out.style.display = 'block';
+        let rawA = document.getElementById('json-a').value; let rawB = document.getElementById('json-b').value;
+        let objA, objB;
+        try { objA = JSON.parse(rawA); } catch(e) { try { objA = JSON.parse(cleanJSON(rawA)); } catch(e2) { out.innerHTML = '<div class="diff-output diff-rem">Error parsing JSON A</div>'; return; } }
+        try { objB = JSON.parse(rawB); } catch(e) { try { objB = JSON.parse(cleanJSON(rawB)); } catch(e2) { out.innerHTML = '<div class="diff-output diff-rem">Error parsing JSON B</div>'; return; } }
+        let html = '<div class="diff-output">';
+        const keys = new Set([...Object.keys(objA), ...Object.keys(objB)]);
+        let hasDiff = false;
+        keys.forEach(key => {
+            const valA = JSON.stringify(objA[key]); const valB = JSON.stringify(objB[key]);
+            if (objA[key] === undefined) { html += `<div class="diff-line diff-add"><span class="diff-key">+ ${key}:</span><span class="diff-val">${valB}</span></div>`; hasDiff = true; } 
+            else if (objB[key] === undefined) { html += `<div class="diff-line diff-rem"><span class="diff-key">- ${key}:</span><span class="diff-val">${valA}</span></div>`; hasDiff = true; } 
+            else if (valA !== valB) { html += `<div class="diff-line diff-chg"><span class="diff-key">~ ${key}:</span><span class="diff-val">${valA} &rarr; ${valB}</span></div>`; hasDiff = true; }
+        });
+        html += '</div>';
+        if(!hasDiff) html = '<div class="result-area" style="display:block; color:green; font-weight:bold;">No Differences Found</div>';
+        out.innerHTML = html;
+    }
+    function fmtJSON() { const raw = document.getElementById('json-input').value; try { const v = JSON.parse(raw); document.getElementById('json-out').innerText = JSON.stringify(v, null, 4); document.getElementById('json-res').style.display = 'block'; } catch(e) { try { const v = JSON.parse(cleanJSON(raw)); document.getElementById('json-out').innerText = JSON.stringify(v, null, 4); document.getElementById('json-res').style.display = 'block'; } catch(e2) { alert("Invalid JSON"); } } }
+    function minJSON() { const raw = document.getElementById('json-input').value; try { let v = JSON.parse(raw); document.getElementById('json-out').innerText = JSON.stringify(v); document.getElementById('json-res').style.display = 'block'; } catch(e) { try { let v = JSON.parse(cleanJSON(raw)); document.getElementById('json-out').innerText = JSON.stringify(v); document.getElementById('json-res').style.display = 'block'; } catch(e2) { alert("Invalid JSON"); } } }
+    function loadSampleDiff() { document.getElementById('json-a').value = '{\n  "id": 1,\n  "status": "active"\n}'; document.getElementById('json-b').value = '{\n  "id": 1,\n  "status": "inactive",\n  "role": "admin"\n}'; }
+    function convertTs() { const ts = document.getElementById('ts-in').value; if(ts) { document.getElementById('ts-val').innerText = new Date(ts * 1000).toLocaleString(); document.getElementById('ts-res').style.display = 'block'; } }
+    function doUrl(mode) { const i = document.getElementById('url-input').value; document.getElementById('url-output').value = mode === 'enc' ? encodeURIComponent(i) : decodeURIComponent(i); }
+    function convertBase64ToPDF() { let b = document.getElementById('b64-input').value.trim(); const n = document.getElementById('b64-name').value || 'doc.pdf'; if(!b) return alert("Empty input"); if(b.startsWith("data:application/pdf;base64,")) b = b.substring(28); try { const bin = window.atob(b); const len = bin.length; const bytes = new Uint8Array(len); for(let i=0; i<len; i++) bytes[i] = bin.charCodeAt(i); const blob = new Blob([bytes], {type: "application/pdf"}); const l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = n; l.click(); } catch(e) { alert("Invalid Base64"); } }
+    function calcMargin() { const c=document.getElementById('m-cost').value, s=document.getElementById('m-sale').value; if(c&&s){ document.getElementById('val-margin').innerText=((s-c)/s*100).toFixed(1)+"%"; document.getElementById('res-margin').style.display='block'; }}
+    function calcDisc() { const p=document.getElementById('d-price').value, o=document.getElementById('d-off').value; if(p&&o){ document.getElementById('val-disc').innerText="$"+(p*(1-o/100)).toFixed(2); document.getElementById('res-disc').style.display='block'; }}
+    function calcLoan() { const p=document.getElementById('l-amt').value, r=document.getElementById('l-rate').value/1200, n=document.getElementById('l-term').value*12; if(p&&r&&n) { document.getElementById('val-loan').innerText="$"+(p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)).toFixed(2); document.getElementById('res-loan').style.display='block'; }}
+    function genPass() { document.getElementById('val-pass').innerText=Math.random().toString(36).slice(-10)+"!"+Math.floor(Math.random()*9); }
+    function genQR() { const div=document.getElementById('qr-area'); div.innerHTML=""; new QRCode(div, document.getElementById('q-text').value); }
+    async function genPDF() { if(!window.jspdf)return alert("Loading..."); const f=document.getElementById('p-file').files[0]; if(!f)return; const r=new FileReader(); r.onload=function(e){ const d=new window.jspdf.jsPDF(); const p=d.getImageProperties(e.target.result); d.addImage(e.target.result,'JPEG',0,0,d.internal.pageSize.getWidth(),(p.height*d.internal.pageSize.getWidth())/p.width); d.save("doc.pdf"); }; r.readAsDataURL(f); }
+
+    let timer, t=1500;
+    function startTimer(){ if(timer)clearInterval(timer); timer=setInterval(()=>{ t--; document.getElementById('timer-display').innerText=`${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}`; if(t<=0)clearInterval(timer); },1000); }
+    function resetTimer(){ clearInterval(timer); t=1500; document.getElementById('timer-display').innerText="25:00"; }
+    
+    // --- MODAL ---
+    function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+</script>
+
+</body>
+</html>
