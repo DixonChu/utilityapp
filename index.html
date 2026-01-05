@@ -10,6 +10,48 @@
     <meta property="og:description" content="The all-in-one toolkit for developers and business owners. No install required.">
     <meta property="og:url" content="https://utilitykit.cloud">
 
+    <script>
+    (function () {
+        var host = window.location.hostname;
+        var element = document.createElement('script');
+        var firstScript = document.getElementsByTagName('script')[0];
+        var url = 'https://quantcast.mgr.consensu.org'
+            .concat('/choice/', 'x', '/', host, '/choice.js')
+            .concat('?tag_version=V2');
+        var uspTries = 0;
+        var uspStubFunction = function () {
+            var arg = arguments;
+            if (typeof window.__uspapi !== uspStubFunction) {
+                setTimeout(function () {
+                    if (typeof window.__uspapi !== 'undefined') {
+                        window.__uspapi.apply(window.__uspapi, arg);
+                    }
+                }, 500);
+            }
+        };
+        var checkStub = function () {
+            if (!window.__tcfapi) {
+                var tcfstub = function () {
+                    var args = arguments;
+                    if (!args.length) { return []; }
+                    if (args[0] === 'ping') {
+                        args[2]({
+                            gdprApplies: true,
+                            cmpLoaded: false,
+                            cmpStatus: 'stub'
+                        }, true);
+                    } else {
+                        // Queue commands
+                        (window.__tcfapi.a = window.__tcfapi.a || []).push(args);
+                    }
+                };
+                window.__tcfapi = tcfstub;
+                window.__tcfapi.a = window.__tcfapi.a || [];
+            }
+        };
+        checkStub();
+    })();
+    </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5144243940271403"
      crossorigin="anonymous"></script>
 
@@ -253,7 +295,7 @@
         <footer>
             <p>&copy; 2026 UtilityKit.cloud. All rights reserved.</p>
             <p>
-                <span class="footer-link" onclick="openModal()">Privacy Policy</span> | 
+                <a class="footer-link" onclick="openModal()" href="?privacy=true">Privacy Policy</a> | 
                 <a href="#" class="footer-link">Contact</a>
             </p>
         </footer>
@@ -383,6 +425,13 @@
     // --- MODAL ---
     function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+    
+    // --- MODAL CLICK OUTSIDE ---
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('modal-overlay')) {
+            closeModal();
+        }
+    }
 </script>
 
 </body>
